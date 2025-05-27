@@ -3,10 +3,10 @@ import pandas as pd
 import openai
 import os
 from dotenv import load_dotenv
-import plotly.express as px
+import plotly.graph_objects as go
 import re
 
-# Load API Key
+# Load API key
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -19,13 +19,11 @@ def load_data():
 
 df = load_data()
 
-# Helper untuk mengekstrak angka dari teks format bebas
+# Konversi aman nilai teks ke angka
 def safe_extract_number(val):
     if isinstance(val, (int, float)):
         return int(val)
-
     val = str(val).lower().replace("–", "-").replace("—", "-").strip()
-
     if "selalu" in val:
         return 5
     if "tidak pernah" in val or "hanya jika diminta" in val:
@@ -38,18 +36,15 @@ def safe_extract_number(val):
         return 3
     if ">8 jam" in val:
         return 2
-
     match = re.match(r"(\d+)[\s\-–—to]*(\d+)", val)
     if match:
         return (int(match.group(1)) + int(match.group(2))) // 2
-
     match = re.search(r"\d+", val)
     if match:
         return int(match.group())
-
     return 0
 
-# Hitung skor tiap aspek
+# Hitung skor per aspek
 def compute_scores(row):
     try:
         delivery = (
@@ -85,32 +80,38 @@ def compute_scores(row):
         st.error(f"Gagal menghitung skor: {e}")
         return pd.DataFrame(columns=["Aspek", "Skor"])
 
-# Judul
+# Layout utama
 st.title("📊 Pelindo AI – Analisis Kinerja Pekerja Berbasis GPT-4o")
 
-# Pilih pekerja
+# Pilih NIPP
 nipp_list = df["NIPP_Pekerja"].unique()
 selected_nipp = st.selectbox("Pilih NIPP Pekerja:", nipp_list)
+
+# Ambil baris pekerja
 row = df[df["NIPP_Pekerja"] == selected_nipp].iloc[0]
 nama_posisi = row["Nama_Posisi"]
 
-# Hitung skor per aspek
+# Hitung skor
 score_df = compute_scores(row)
 
-# Tampilkan tabel skor
-st.subheader("🗂️ Ringkasan Skor Per Aspek")
+# Tampilkan tabel
+st.subheader("📁 Ringkasan Skor Per Aspek")
 st.dataframe(score_df)
 
-# Chart
-st.subheader("📈 Visualisasi Skor Kinerja")
-fig = px.bar(score_df, x="Aspek", y="Skor", color="Aspek", text_auto=True, title="Skor Kinerja Berdasarkan Aspek")
-st.plotly_chart(fig)
+# Visualisasi masing-masing aspek
+st.subheader("📈 Visualisasi Skor Kinerja per Aspek")
+for aspek in ["Delivery", "Leadership", "Communication", "Teamwork"]:
+    nilai = score_df[score_df["Aspek"] == aspek]["Skor"].values[0]
+    fig = go.Figure(data=[go.Bar(x=[aspek], y=[nilai], text=[nilai], textposition='auto')])
+    fig.update_layout(title=f"📊 Skor {aspek}", xaxis_title="Aspek", yaxis_title="Skor")
+    st.plotly_chart(fig)
 
-# Prompt untuk GPT-4o
+# Ambil nilai teks untuk prompt GPT
 def get_val(col_name):
     matches = [col for col in df.columns if col_name.lower() in col.lower()]
     return str(row[matches[0]]) if matches else "[Data Tidak Ada]"
 
+# Buat prompt untuk narasi GPT
 prompt = f"""
 Anda adalah Pelindo AI, asisten analisis kinerja profesional.
 
@@ -144,10 +145,10 @@ Tulislah narasi profesional dan sopan, gunakan gaya naratif, bukan bullet point.
 Berikan pujian pada skor tinggi, dan saran pada skor rendah.
 """
 
-# Tombol generate analisis
-st.subheader("🧠 Analisis Naratif oleh GPT-4o")
-if st.button("🎯 Generate Analisis"):
-    with st.spinner("Sedang menganalisis dengan GPT-4o..."):
+# Generate narasi dari GPT-4o
+st.subheader("🧠 Narasi Analisis oleh GPT-4o")
+if st.button("🎯 Generate Narasi"):
+    with st.spinner("Sedang menganalisis..."):
         try:
             response = openai.ChatCompletion.create(
                 model="gpt-4o",
@@ -155,16 +156,11 @@ if st.button("🎯 Generate Analisis"):
                     {"role": "system", "content": "Anda adalah Pelindo AI, asisten penilai kinerja profesional."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.8,
-                max_tokens=2000
+                temperature=0.7,
+                max_tokens=1000
             )
             narasi = response.choices[0].message.content
-            st.markdown("### ✍️ Narasi Kinerja:")
+            st.markdown("### ✍️ Narasi Kinerja")
             st.write(narasi)
         except Exception as e:
-            st.error(f"Gagal memanggil GPT API: {e}")
-
-
-
-
-
+            st.error(f"Gagal mengakses GPT API: {e}")
