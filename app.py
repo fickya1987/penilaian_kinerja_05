@@ -104,6 +104,11 @@ TEAMWORK:
 - Diskusi tim: {get_val('Berpartisipasi aktif')}
 
 KPI Highlights:
+- Kamu adalah yang paling tahu mengenai semua rincian parameter KPI yang terkait bisnis Pelindo
+- Jelaskan dan elaborasi tiap deskripsi dan skor KPI dari unit-unit di Pelindo
+- ketika membahas deskripsi KPI, coba detailkan dengaan melakukan insight sesuai sektor bisnis pelindo dan kepelabuhan sesuai dengan knowledge kamu
+
+
 """
 
 for i in range(1, 7):
