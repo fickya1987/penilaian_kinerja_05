@@ -3,8 +3,9 @@ import pandas as pd
 import openai
 import os
 from dotenv import load_dotenv
+import plotly.express as px
 
-# Load environment variables
+# Load API Key
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -12,33 +13,81 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 @st.cache_data
 def load_data():
     df = pd.read_csv("dummy_feedback.csv")
-    df.columns = df.columns.str.strip()  # Remove leading/trailing spaces
+    df.columns = df.columns.str.strip()  # Bersihkan nama kolom
     return df
 
 df = load_data()
 
-# Title
-st.title("Pelindo AI: Analisis Kinerja Individu")
+# Judul
+st.title("📊 Pelindo AI – Analisis Kinerja Pekerja Berbasis GPT-4o")
 
-# Select NIPP
+# Pilih NIPP
 nipp_list = df["NIPP_Pekerja"].unique()
 selected_nipp = st.selectbox("Pilih NIPP Pekerja:", nipp_list)
 
-# Ambil data pekerja
+# Ambil baris data pekerja
 row = df[df["NIPP_Pekerja"] == selected_nipp].iloc[0]
 nama_posisi = row["Nama_Posisi"]
 
-# Ambil nama-nama kolom yang kita perlukan
+# Helper untuk ambil nilai kolom
 def get_value(col_name):
-    # Pastikan pencocokan kolom yang toleran terhadap whitespace
-    matched_cols = [col for col in df.columns if col_name.lower() in col.lower()]
-    if matched_cols:
-        return row[matched_cols[0]]
-    return "[Data Tidak Ditemukan]"
+    matches = [col for col in df.columns if col_name.lower() in col.lower()]
+    if matches:
+        return str(row[matches[0]])
+    return "0"
 
-# Compose prompt
+# Komputasi Skor Tiap Aspek
+def compute_scores():
+    try:
+        delivery_score = (
+            int(get_value("Pekerjaan yang diberikan selesai")) * 0.4 +
+            int(get_value("Pekerjaan diselesaikan tepat waktu")) * 0.3 +
+            int(get_value("Kualitas Pekerjaan")) * 0.3
+        ) / 100
+
+        leadership_score = sum([
+            int(get_value("Membimbing rekan tim").replace('x', '').replace('≥','').split()[0]),
+            int(get_value("Membangun semangat tim").replace('x', '').replace('≥','').split()[0]),
+            int(get_value("Mengambil peran aktif").replace('x', '').replace('≥','').split()[0])
+        ])
+
+        comm_score = (
+            5 if get_value("Memotong pembicaraan") == "0" else 2
+        ) + (
+            5 if "2" in get_value("Waktu respon komunikasi penting") else 3
+        ) + (
+            int(get_value("Memberikan masukan").replace('x', '').replace('≥','').split()[0])
+        )
+
+        team_score = sum([
+            int(get_value("Membagikan informasi").replace('x', '').replace('≥','').split()[0]),
+            int(get_value("Menawarkan bantuan").replace('x', '').replace('≥','').split()[0]),
+            int(get_value("Proaktif menawarkan bantuan").replace('x', '').replace('≥','').split()[0]),
+            6 if "≥" in get_value("Berpartisipasi aktif") else 3
+        ])
+
+        return pd.DataFrame({
+            "Aspek": ["Delivery", "Leadership", "Communication", "Teamwork"],
+            "Skor": [delivery_score, leadership_score, comm_score, team_score]
+        })
+
+    except Exception as e:
+        st.error(f"Gagal menghitung skor: {e}")
+        return pd.DataFrame(columns=["Aspek", "Skor"])
+
+# Tampilkan Skor
+score_df = compute_scores()
+st.subheader("📋 Ringkasan Skor Per Aspek")
+st.dataframe(score_df)
+
+# Chart
+st.subheader("📈 Visualisasi Skor Kinerja")
+fig = px.bar(score_df, x="Aspek", y="Skor", color="Aspek", text_auto=True, title="Skor Kinerja Berdasarkan Aspek")
+st.plotly_chart(fig)
+
+# Prompt ke GPT
 prompt = f"""
-Anda adalah Pelindo AI, sang asisten analisis kinerja berbasis GPT-4o.
+Anda adalah Pelindo AI, asisten analisis kinerja profesional.
 
 Tulislah narasi penilaian menyeluruh berdasarkan hasil formulir feedback berikut:
 
@@ -67,24 +116,31 @@ TEAMWORK:
 - Berpartisipasi dalam diskusi tim: {get_value('Berpartisipasi aktif')}
 
 Berikan dan tampilkan juga nilai kuantitatif (bila ada) untuk setiap parameter. Kemudian, sajikan juga chart atau grafik yang merujuk pada parameter yang kuantitatif.
-Tulislah narasi profesional dan sopan, berikan pujian untuk skor tinggi, dan berikan saran untuk skor rendah. Gunakan gaya naratif, bukan bullet point.
+Tulislah narasi profesional dan sopan, gunakan gaya naratif, bukan bullet point. 
+Berikan pujian pada skor tinggi, dan saran pada skor rendah.
 """
 
-# Generate narrative
-if st.button("Generate Analisis Naratif"):
-    with st.spinner("Sedang menganalisa..."):
+# Generate Narasi
+st.subheader("🧠 Analisis Naratif oleh GPT-4o")
+if st.button("🎯 Generate Analisis"):
+    with st.spinner("Sedang menganalisis dengan GPT-4o..."):
         try:
             response = openai.ChatCompletion.create(
                 model="gpt-4o",
                 messages=[
-                    {"role": "system", "content": "Anda adalah Pelindo AI, asisten penilai kinerja profesional."},
+                    {"role": "system", "content": "Anda adalah Pelindo AI, asisten analisis kinerja berbasis AI."},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
                 max_tokens=1000
             )
             narasi = response.choices[0].message.content
-            st.markdown("### Hasil Analisis Naratif:")
+            st.markdown("### ✍️ Narasi Kinerja:")
             st.write(narasi)
         except Exception as e:
-            st.error(f"Gagal mengakses GPT API: {e}")
+            st.error(f"Gagal memanggil GPT API: {e}")
+
+
+
+
+
