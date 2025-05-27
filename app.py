@@ -4,7 +4,7 @@ import openai
 import os
 from dotenv import load_dotenv
 
-# Load OpenAI API Key dari .env
+# Load API key dari .env
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
@@ -18,15 +18,15 @@ def load_data():
 df = load_data()
 
 # Judul Aplikasi
-st.title("📊 Pelindo AI – Analisis Kinerja Pekerja Berbasis GPT-4o")
+st.title("📊 Pelindo AI – Analisis Kinerja & KPI Pekerja")
 
-# Pilihan NIPP
+# Pilih NIPP
 nipp_list = df["NIPP_Pekerja"].unique()
 selected_nipp = st.selectbox("Pilih NIPP Pekerja:", nipp_list)
 row = df[df["NIPP_Pekerja"] == selected_nipp].iloc[0]
 nama_posisi = row["Nama_Posisi"]
 
-# Daftar kolom per aspek
+# Kelompok parameter
 delivery_cols = ['Pekerjaan yang diberikan selesai', 'Pekerjaan diselesaikan tepat waktu', 'Kualitas Pekerjaan']
 leadership_cols = ['Membimbing rekan tim', 'Menunjukkan sikap kerja positif dan inspiratif',
                    'Membangun semangat tim', 'Mengambil peran aktif menyelesaikan tantangan']
@@ -34,7 +34,7 @@ communication_cols = ['Memotong pembicaraan tanpa alasan', 'Waktu respon komunik
 teamwork_cols = ['Membagikan informasi', 'Menawarkan bantuan dalam pekerjaan tim',
                  'Proaktif menawarkan bantuan saat rekan kesulitan', 'Berpartisipasi aktif dalam diskusi atau koordinasi tim']
 
-# Fungsi ambil nilai parameter sebagai DataFrame
+# Fungsi tampilkan nilai parameter per aspek
 def get_aspek_df(cols):
     return pd.DataFrame({col: [row[col]] for col in cols})
 
@@ -51,16 +51,33 @@ st.dataframe(get_aspek_df(communication_cols))
 st.subheader("📁 Teamwork")
 st.dataframe(get_aspek_df(teamwork_cols))
 
-# Ambil nilai deskriptif untuk prompt GPT
+# ===== KPI Section =====
+st.subheader("📌 Deskripsi dan Nilai KPI 1–6")
+
+kpi_data = []
+for i in range(1, 7):
+    deskripsi = f"Deskripsi_KPI_{i}"
+    nilai = f"Nilai_KPI_{i}"
+    if deskripsi in df.columns and nilai in df.columns:
+        kpi_data.append({
+            "KPI": f"KPI {i}",
+            "Deskripsi": row[deskripsi],
+            "Nilai": row[nilai]
+        })
+
+kpi_df = pd.DataFrame(kpi_data)
+st.dataframe(kpi_df)
+
+# Ambil nilai deskriptif untuk GPT prompt
 def get_val(col_name):
     matches = [col for col in df.columns if col_name.lower() in col.lower()]
     return str(row[matches[0]]) if matches else "[Data Tidak Ada]"
 
-# Prompt GPT-4o
+# Generate prompt untuk GPT
 prompt = f"""
 Anda adalah Pelindo AI, asisten analisis kinerja profesional.
 
-Tulislah narasi penilaian menyeluruh berdasarkan hasil formulir feedback berikut:
+Tulislah narasi profesional dan sopan berdasarkan hasil berikut:
 
 Posisi: {nama_posisi}
 
@@ -86,11 +103,17 @@ TEAMWORK:
 - Bantu rekan kesulitan: {get_val('Proaktif menawarkan bantuan')}
 - Diskusi tim: {get_val('Berpartisipasi aktif')}
 
-Tulislah narasi profesional dan sopan, gunakan gaya naratif, bukan bullet point.
-Berikan pujian pada skor tinggi, dan saran pada skor rendah.
+KPI Highlights:
 """
 
-# GPT-4o Narasi
+for i in range(1, 7):
+    deskripsi = get_val(f"Deskripsi_KPI_{i}")
+    nilai = get_val(f"Nilai_KPI_{i}")
+    prompt += f"\nKPI {i}: {deskripsi} → Nilai: {nilai}"
+
+prompt += "\n\nTulislah narasi lengkap dan sopan. Berikan apresiasi pada nilai tinggi dan saran pada nilai sedang atau rendah."
+
+# Generate analisis naratif
 st.subheader("🧠 Narasi Analisis oleh GPT-4o")
 if st.button("🎯 Generate Narasi"):
     with st.spinner("Sedang menganalisis..."):
@@ -101,11 +124,12 @@ if st.button("🎯 Generate Narasi"):
                     {"role": "system", "content": "Anda adalah Pelindo AI, asisten penilai kinerja profesional."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7,
-                max_tokens=1000
+                temperature=0.8,
+                max_tokens=1500
             )
             narasi = response.choices[0].message.content
             st.markdown("### ✍️ Narasi Kinerja")
             st.write(narasi)
         except Exception as e:
             st.error(f"Gagal mengakses GPT API: {e}")
+
