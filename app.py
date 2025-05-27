@@ -132,4 +132,3 @@ if st.button("🎯 Generate Narasi"):
             st.write(narasi)
         except Exception as e:
             st.error(f"Gagal mengakses GPT API: {e}")
-
