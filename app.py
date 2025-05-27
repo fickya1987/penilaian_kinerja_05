@@ -115,7 +115,7 @@ TEAMWORK:
 - Proaktif membantu saat rekan kesulitan: {get_value('Proaktif menawarkan bantuan')}
 - Berpartisipasi dalam diskusi tim: {get_value('Berpartisipasi aktif')}
 
-Berikan dan tampilkan juga nilai kuantitatif (bila ada) untuk setiap parameter. Kemudian, sajikan juga chart atau grafik yang merujuk pada parameter yang kuantitatif.
+Selalu berikan dan tampilkan juga nilai kuantitatif (bila ada) untuk setiap parameter dalam format tabel.
 Tulislah narasi profesional dan sopan, gunakan gaya naratif, bukan bullet point. 
 Berikan pujian pada skor tinggi, dan saran pada skor rendah.
 """
@@ -131,8 +131,8 @@ if st.button("🎯 Generate Analisis"):
                     {"role": "system", "content": "Anda adalah Pelindo AI, asisten analisis kinerja berbasis AI."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7,
-                max_tokens=1000
+                temperature=0.8,
+                max_tokens=2000
             )
             narasi = response.choices[0].message.content
             st.markdown("### ✍️ Narasi Kinerja:")
