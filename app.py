@@ -66,6 +66,7 @@ TEAMWORK:
 - Proaktif membantu saat rekan kesulitan: {get_value('Proaktif menawarkan bantuan')}
 - Berpartisipasi dalam diskusi tim: {get_value('Berpartisipasi aktif')}
 
+Berikan dan tampilkan juga nilai kuantitatif (bila ada) untuk setiap parameter. Kemudian, sajikan juga chart atau grafik yang merujuk pada parameter yang kuantitatif.
 Tulislah narasi profesional dan sopan, berikan pujian untuk skor tinggi, dan berikan saran untuk skor rendah. Gunakan gaya naratif, bukan bullet point.
 """
 
