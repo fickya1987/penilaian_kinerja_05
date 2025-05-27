@@ -155,8 +155,8 @@ if st.button("🎯 Generate Analisis"):
                     {"role": "system", "content": "Anda adalah Pelindo AI, asisten penilai kinerja profesional."},
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.7,
-                max_tokens=1000
+                temperature=0.8,
+                max_tokens=2000
             )
             narasi = response.choices[0].message.content
             st.markdown("### ✍️ Narasi Kinerja:")
