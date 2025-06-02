@@ -52,7 +52,7 @@ st.subheader("📁 Teamwork")
 st.dataframe(get_aspek_df(teamwork_cols))
 
 # ===== KPI Section =====
-st.subheader("📌 Deskripsi dan Nilai KPI 1–6")
+st.subheader("📌 Deskripsi dan Nilai KPI")
 
 kpi_data = []
 for i in range(1, 7):
