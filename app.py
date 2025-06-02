@@ -76,7 +76,7 @@ def get_val(col_name):
 # Generate prompt untuk GPT
 prompt = f"""
 Anda adalah Pelindo AI, asisten analisis kinerja profesional.
-
+Narasi tidak perlu diawali dengan basa-basi dan tidak perlu diakhiri dengan salam hormat.
 Tulislah narasi profesional dan sopan berdasarkan hasil berikut:
 
 Posisi: {nama_posisi}
