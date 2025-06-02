@@ -119,7 +119,7 @@ for i in range(1, 7):
 prompt += "\n\nTulislah narasi lengkap dan sopan. Berikan apresiasi pada nilai tinggi dan saran pada nilai sedang atau rendah."
 
 # Generate analisis naratif
-st.subheader("🧠 Narasi Analisis oleh GPT-4o")
+st.subheader("🧠 Narasi Analisis oleh Pelindo AI")
 if st.button("🎯 Generate Narasi"):
     with st.spinner("Sedang menganalisis..."):
         try:
